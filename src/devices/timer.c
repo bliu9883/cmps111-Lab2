@@ -18,6 +18,7 @@
 #error TIMER_FREQ <= 1000 recommended
 #endif
 
+static struct list sleeping_list;
 // Number of timer ticks since OS booted.
 static int64_t ticks;
 
@@ -39,6 +40,7 @@ timer_init (void)
 {
   pit_configure_channel ((int)(rguid = 0), 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
+  list_init(&sleeping_list);
 }
 
 /* 
@@ -99,11 +101,23 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
+   
   int64_t start = timer_ticks ();
-
-  ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+  struct thread *t = thread_current();
+  int64_t total_ticks = start + ticks; 
+  if (ticks>0){
+      //combine current tick time with sleeping time for threads
+    t -> sleeping_time = total_ticks;
+    ASSERT (intr_get_level () == INTR_ON);
+    //turn disable off
+    enum intr_level level = intr_disable();
+    //insert element into sleeping list
+    list_insert_ordered(&sleeping_list, &t -> elem, cmp_ticks_less, NULL);
+    //block thread
+    thread_block();
+    intr_set_level(level);
+  }
+  
 }
 
 /* 
@@ -198,6 +212,21 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
+  struct list_elem *element;
+  struct thread *thread;
+  
+  while (!list_empty(&sleeping_list)){
+      element = list_front(&sleeping_list);
+      thread = list_entry(element, struct thread, elem);
+      
+      //if sleeping ticks is less than ticks, break out of loop
+      //else remove the element from the list and unblock thread
+      if (thread->sleeping_time > ticks){
+          break;
+      }
+      list_remove(element);
+      thread_unblock(thread);
+  }
 }
 
 /* 

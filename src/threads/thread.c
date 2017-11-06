@@ -245,11 +245,7 @@ thread_create(const char *name, int priority,
     thread_unblock(t);
     
     //preemption
-    struct thread *front = list_entry(list_front(&ready_list), struct thread, elem);
-    if (thread_current()->priority < front->priority){
-        thread_yield();
-    }
-       
+    thread_preemption();
     return tid;
 }
 
@@ -643,6 +639,32 @@ bool priority_compare(const struct list_elem *x,
         return false;
     }
 }
+
+//function to compare thread sleeping times
+bool
+cmp_ticks_less(const struct list_elem *x,
+               const struct list_elem *y,
+               void *aux UNUSED)
+{
+  struct thread *thread_x = list_entry (x, struct thread, elem);
+  struct thread *thread_y = list_entry (y, struct thread, elem);
+  if (thread_x->sleeping_time < thread_y->sleeping_time){
+      return true;
+  }
+  else{
+      return false;
+  }
+}
+
+void thread_preemption(void){
+    enum intr_level old_level = intr_disable();
+//    struct thread *front = list_entry(list_front(&ready_list), struct thread, elem);
+    if (!list_empty(&ready_list) && thread_current()->priority < list_entry(list_front(&ready_list), struct thread, elem)->priority){
+        thread_yield();
+    }
+    intr_set_level(old_level);
+}
+
 
 /* Offset of `stack' member within `struct thread'.
  * Used by switch.S, which can't figure it out on its own. */
