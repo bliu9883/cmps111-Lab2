@@ -14,4 +14,6 @@ void condvar_wait(struct condvar *, struct lock *);
 void condvar_signal(struct condvar *, struct lock *);
 void condvar_broadcast(struct condvar *, struct lock *);
 
+bool sem_priority_compare(const struct list_elem *x, 
+                          const struct list_elem *y);
 #endif /* UCSC CMPS111 */

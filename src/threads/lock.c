@@ -82,12 +82,18 @@ lock_acquire(struct lock *lock)
 
     semaphore_down(&lock->semaphore);
     lock->holder = thread_current();
+//    if (lock->holder){
+//        thread_current()->wait_lock = lock;
+//        list_insert_ordered(&lock->holder->needs_lock, 
+//                            &thread_current()->needs_lock_elem, 
+//                            priority_compare, NULL);
+//    }
 }
 
 /* 
  * Tries to acquires LOCK and returns true if successful or false
  * on failure.  The lock must not already be held by the current
- * thread.
+ * thread.a
  *
  * This function will not sleep, so it may be called within an
  * interrupt handler. 

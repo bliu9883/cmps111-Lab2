@@ -658,7 +658,7 @@ cmp_ticks_less(const struct list_elem *x,
 
 void thread_preemption(void){
     enum intr_level old_level = intr_disable();
-//    struct thread *front = list_entry(list_front(&ready_list), struct thread, elem);
+
     if (!list_empty(&ready_list) && thread_current()->priority < list_entry(list_front(&ready_list), struct thread, elem)->priority){
         thread_yield();
     }

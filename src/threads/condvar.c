@@ -81,7 +81,8 @@ condvar_wait(struct condvar *cond, struct lock *lock)
 
     struct semaphore waiter;
     semaphore_init(&waiter, 0);
-    list_push_back(&cond->waiters, &waiter.elem);
+//    list_push_back(&cond->waiters, &waiter.elem);
+    list_insert_ordered(&cond->waiters, &waiter.elem, sem_priority_compare, NULL);
     lock_release(lock);
     semaphore_down(&waiter);
     lock_acquire(lock);
@@ -105,6 +106,7 @@ condvar_signal(struct condvar *cond, struct lock *lock UNUSED)
     ASSERT(lock_held_by_current_thread(lock));
 
     if (!list_empty(&cond->waiters)) {
+        list_sort(&cond->waiters, sem_priority_compare, NULL);
         semaphore_up(list_entry(list_pop_front(&cond->waiters), struct semaphore, elem));
     }
 }
@@ -125,5 +127,31 @@ condvar_broadcast(struct condvar *cond, struct lock *lock)
 
     while (!list_empty(&cond->waiters)) {
         condvar_signal(cond, lock);
+    }
+}
+
+
+bool sem_priority_compare(const struct list_elem *x, 
+                          const struct list_elem *y){
+    struct semaphore *sx = list_entry(x, struct semaphore, elem);
+    struct semaphore *sy = list_entry(y, struct semaphore, elem);
+    
+    list_sort(&sx->waiters, priority_compare, NULL);
+    list_sort(&sy->waiters, priority_compare, NULL);
+    
+    if (list_empty(&sx->waiters)){
+        return true;
+    }
+    if (list_empty(&sy->waiters)){
+        return false;
+    }
+    struct thread *thread_x = list_entry(list_front(&sx->waiters), struct thread, elem);
+    struct thread *thread_y = list_entry(list_front(&sy->waiters), struct thread, elem);
+    
+    if (thread_x->priority > thread_y->priority){
+        return true;
+    }
+    else{
+        return false;
     }
 }
