@@ -79,15 +79,21 @@ lock_acquire(struct lock *lock)
     ASSERT(lock != NULL);
     ASSERT(!intr_context());
     ASSERT(!lock_held_by_current_thread(lock));
-
+    
+    enum intr_level old_level = intr_disable();
+    
+    if (lock->holder){
+        thread_current()->wait_lock = lock;
+        
+        //inserts current thread to list of locks waiting for the thread
+        list_insert_ordered(&lock->holder->needs_lock, 
+                            &thread_current()->needs_lock_elem, 
+                            priority_compare, NULL);
+    }    
     semaphore_down(&lock->semaphore);
+    thread_current()->wait_lock = NULL;
     lock->holder = thread_current();
-//    if (lock->holder){
-//        thread_current()->wait_lock = lock;
-//        list_insert_ordered(&lock->holder->needs_lock, 
-//                            &thread_current()->needs_lock_elem, 
-//                            priority_compare, NULL);
-//    }
+    intr_set_level(old_level);
 }
 
 /* 
@@ -123,9 +129,15 @@ lock_release(struct lock *lock)
 {
     ASSERT(lock != NULL);
     ASSERT(lock_held_by_current_thread(lock));
-
+    
+    enum intr_level old_level = intr_disable();
     lock->holder = NULL;
+    
+    remove_lock(lock);
+    reset_priority();
+
     semaphore_up(&lock->semaphore);
+    intr_set_level(old_level);
 }
 
 /* 

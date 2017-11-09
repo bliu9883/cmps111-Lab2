@@ -384,12 +384,20 @@ thread_foreach(thread_action_func *func, void *aux)
 void
 thread_set_priority(int new_priority)
 {
-    struct thread *next_thread;
-    thread_current()->priority = new_priority;
-    next_thread = list_entry(list_begin(&ready_list), struct thread, elem);
-    if (next_thread->priority > new_priority){
-        thread_yield();
-    }
+//    struct thread *next_thread;
+//    thread_current()->priority = new_priority;
+//    next_thread = list_entry(list_begin(&ready_list), struct thread, elem);
+//    if (next_thread->priority > new_priority){
+//        thread_preemption();
+//    }
+    enum intr_level old_level = intr_disable();
+    struct thread *thread_curr = thread_current();
+    int old_priority = thread_curr->priority;
+    thread_curr->base_priority = new_priority;
+    thread_curr->priority = new_priority;
+    list_sort(&ready_list, priority_compare, NULL);
+    thread_preemption();
+    intr_set_level(old_level);
 }
 
 /* Returns the current thread's priority. */
@@ -513,8 +521,13 @@ init_thread(struct thread *t, const char *name, int priority)
     strlcpy(t->name, name, sizeof t->name);
     t->stack = (uint8_t *) t + PGSIZE;
     t->priority = priority;
+    t->base_priority = priority;
     t->magic = THREAD_MAGIC;
     list_push_back(&all_list, &t->allelem);
+    
+    t->wait_lock = NULL;
+    list_init(&t->needs_lock);
+    
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
@@ -658,14 +671,38 @@ cmp_ticks_less(const struct list_elem *x,
 
 void thread_preemption(void){
     enum intr_level old_level = intr_disable();
-
+    
     if (!list_empty(&ready_list) && thread_current()->priority < list_entry(list_front(&ready_list), struct thread, elem)->priority){
         thread_yield();
     }
     intr_set_level(old_level);
 }
 
+void remove_lock(struct lock *lock){
+    struct list_elem *curr = list_begin(&thread_current()->needs_lock);
+    struct list_elem *next;
+    while (curr != list_end(&thread_current()->needs_lock)){
+        struct thread *t = list_entry(curr, struct thread, needs_lock_elem);
+        next = list_next(curr);
+        if (t->wait_lock == lock){
+            list_remove(curr);
+        }
+        curr = next;
+    }
+}
 
+void reset_priority(void){
+    struct thread *t = thread_current();
+    t->priority = t->base_priority;
+    if (list_empty(&t->needs_lock)){
+        return;
+    }
+    struct thread *front = list_entry(list_front(&t->needs_lock), struct thread, 
+                                      needs_lock_elem);
+    if (front->priority > t->priority){
+        t->priority = front->priority;
+    }
+}
 /* Offset of `stack' member within `struct thread'.
  * Used by switch.S, which can't figure it out on its own. */
 char *rguid = 0;

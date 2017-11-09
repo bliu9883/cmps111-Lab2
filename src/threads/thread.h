@@ -89,12 +89,16 @@ struct thread {
     int64_t sleeping_time;
    
     int priority; /* Priority. */
+    int base_priority;
     struct list_elem allelem; /* List element for all threads list. */
 
     /* Shared between thread.c and sempahore.c. */
     struct list_elem elem; /* List element. */
     
-
+    struct lock *wait_lock;     //lock that thread needs
+    struct list needs_lock;     //list of other threads that need the lock
+    struct list_elem needs_lock_elem;   //list elem of other threads
+    
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir; /* Page directory. */
@@ -150,5 +154,7 @@ cmp_ticks_less(const struct list_elem *x,
 
 
 void thread_preemption(void);
+void remove_lock(struct lock *lock);
+void reset_priority(void);
 
 #endif /* threads/thread.h */
