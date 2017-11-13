@@ -96,7 +96,7 @@ struct thread {
     struct list_elem elem; /* List element. */
     
     struct lock *wait_lock;     //lock that thread needs
-    struct list needs_lock;     //list of other threads that need the lock
+    struct list needs_lock;     //list of other threads that need the lock current thread has
     struct list_elem needs_lock_elem;   //list elem of other threads
     
 #ifdef USERPROG
@@ -112,6 +112,7 @@ struct thread {
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 extern bool thread_mlfqs;
+//extern struct ready_list;
 
 void thread_init(void);
 void thread_start(void);

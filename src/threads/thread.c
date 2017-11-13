@@ -46,6 +46,7 @@
 #include "threads/lock.h"
 #include "threads/condvar.h"
 #include "threads/vaddr.h"
+#include "threads/brian-change.h"
 
 #ifdef USERPROG
 #include "userprog/process.h"
@@ -58,7 +59,7 @@
 
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
-static struct list ready_list;
+struct list ready_list;
 
 /* List of all processes.  Processes are added to this list
    when they are first scheduled and removed when they exit. */
@@ -639,34 +640,6 @@ allocate_tid(void)
     lock_release(&tid_lock);
 
     return tid;
-}
-
-bool priority_compare(const struct list_elem *x, 
-                      const struct list_elem *y, void *aux){
-    struct thread *thread_x = list_entry(x, struct thread, elem);
-    struct thread *thread_y = list_entry(y, struct thread, elem);
-    if (thread_x->priority>thread_y->priority){
-        return true;
-    }
-    else{
-        return false;
-    }
-}
-
-//function to compare thread sleeping times
-bool
-cmp_ticks_less(const struct list_elem *x,
-               const struct list_elem *y,
-               void *aux UNUSED)
-{
-  struct thread *thread_x = list_entry (x, struct thread, elem);
-  struct thread *thread_y = list_entry (y, struct thread, elem);
-  if (thread_x->sleeping_time < thread_y->sleeping_time){
-      return true;
-  }
-  else{
-      return false;
-  }
 }
 
 void thread_preemption(void){

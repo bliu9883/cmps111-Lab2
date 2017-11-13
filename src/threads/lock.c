@@ -82,7 +82,9 @@ lock_acquire(struct lock *lock)
     
     enum intr_level old_level = intr_disable();
     
-    if (lock->holder){
+    if (lock->holder && lock->holder->priority < thread_current()->priority){
+//        printf("the old lock holder priority is %d", lock->holder->priority);
+        lock->holder->priority = thread_current()->priority;
         thread_current()->wait_lock = lock;
         
         //inserts current thread to list of locks waiting for the thread
