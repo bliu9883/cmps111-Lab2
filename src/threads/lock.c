@@ -36,6 +36,8 @@
 #include "threads/lock.h"
 #include "threads/interrupt.h"
 #include "threads/thread.h"
+#include "threads/code.h"
+
 
 /* 
  * Initializes LOCK.  A lock can be held by at most a single
@@ -75,7 +77,7 @@ lock_init(struct lock *lock)
  */
 void
 lock_acquire(struct lock *lock)
-{
+{ 
     ASSERT(lock != NULL);
     ASSERT(!intr_context());
     ASSERT(!lock_held_by_current_thread(lock));
@@ -83,7 +85,18 @@ lock_acquire(struct lock *lock)
     enum intr_level old_level = intr_disable();
     
     if (lock->holder && lock->holder->priority < thread_current()->priority){
-//        printf("the old lock holder priority is %d", lock->holder->priority);
+        if (lock->holder->wait_lock){
+            lock->holder->wait_lock->holder->priority = thread_current()->priority;
+            
+            struct lock *l = lock;
+            while (l->holder->wait_lock != NULL){
+                if (l->holder->wait_lock->holder->priority < thread_current()->priority){
+                    l->holder->wait_lock->holder->priority = thread_current()->priority;
+                }
+//                lock->holder->wait_lock->holder->priority = thread_current()->priority;
+                l = l->holder->wait_lock;
+            }
+        }
         lock->holder->priority = thread_current()->priority;
         thread_current()->wait_lock = lock;
         

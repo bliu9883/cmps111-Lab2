@@ -46,7 +46,7 @@
 #include "threads/lock.h"
 #include "threads/condvar.h"
 #include "threads/vaddr.h"
-#include "threads/brian-change.h"
+#include "threads/code.h"
 
 #ifdef USERPROG
 #include "userprog/process.h"
@@ -395,9 +395,12 @@ thread_set_priority(int new_priority)
     struct thread *thread_curr = thread_current();
     int old_priority = thread_curr->priority;
     thread_curr->base_priority = new_priority;
-    thread_curr->priority = new_priority;
-    list_sort(&ready_list, priority_compare, NULL);
-    thread_preemption();
+    if (new_priority<old_priority && list_empty(&thread_curr->needs_lock)){
+        thread_curr->priority = new_priority;
+        list_sort(&ready_list, priority_compare, NULL);
+        thread_preemption();
+    }
+    
     intr_set_level(old_level);
 }
 
@@ -651,31 +654,6 @@ void thread_preemption(void){
     intr_set_level(old_level);
 }
 
-void remove_lock(struct lock *lock){
-    struct list_elem *curr = list_begin(&thread_current()->needs_lock);
-    struct list_elem *next;
-    while (curr != list_end(&thread_current()->needs_lock)){
-        struct thread *t = list_entry(curr, struct thread, needs_lock_elem);
-        next = list_next(curr);
-        if (t->wait_lock == lock){
-            list_remove(curr);
-        }
-        curr = next;
-    }
-}
-
-void reset_priority(void){
-    struct thread *t = thread_current();
-    t->priority = t->base_priority;
-    if (list_empty(&t->needs_lock)){
-        return;
-    }
-    struct thread *front = list_entry(list_front(&t->needs_lock), struct thread, 
-                                      needs_lock_elem);
-    if (front->priority > t->priority){
-        t->priority = front->priority;
-    }
-}
 /* Offset of `stack' member within `struct thread'.
  * Used by switch.S, which can't figure it out on its own. */
 char *rguid = 0;

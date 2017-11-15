@@ -8,6 +8,7 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "threads/barrier.h"
+#include "threads/code.h"
   
 /* See [8254] for hardware details of the 8254 timer chip. */
 

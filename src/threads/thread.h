@@ -145,17 +145,17 @@ void thread_set_nice(int);
 int thread_get_recent_cpu(void);
 int thread_get_load_avg(void);
 
-bool priority_compare(const struct list_elem *x, 
-                      const struct list_elem *y, void *aux);
-
-bool
-cmp_ticks_less(const struct list_elem *x,
-               const struct list_elem *y,
-               void *aux UNUSED);
+//bool priority_compare(const struct list_elem *x, 
+//                      const struct list_elem *y, void *aux);
+//
+//bool
+//cmp_ticks_less(const struct list_elem *x,
+//               const struct list_elem *y,
+//               void *aux UNUSED);
 
 
 void thread_preemption(void);
-void remove_lock(struct lock *lock);
-void reset_priority(void);
+//void remove_lock(struct lock *lock);
+//void reset_priority(void);
 
 #endif /* threads/thread.h */

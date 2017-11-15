@@ -36,6 +36,7 @@
 #include "threads/semaphore.h"
 #include "threads/interrupt.h"
 #include "threads/thread.h"
+#include "threads/code.h"
 
 /* 
  * Initializes semaphore SEMA to VALUE.  A semaphore is a
@@ -73,7 +74,6 @@ semaphore_down(struct semaphore *sema)
 
     enum intr_level old_level = intr_disable();
     while (sema->value == 0) {
-//        list_push_back(&sema->waiters, &thread_current()->elem);
         list_insert_ordered(&sema->waiters, &thread_current()->elem, priority_compare, NULL);
         thread_block();
     }
@@ -121,8 +121,8 @@ semaphore_up(struct semaphore *semaphore)
 
     old_level = intr_disable();
     if (!list_empty(&semaphore->waiters)) {
-        thread_unblock(list_entry(
-            list_pop_front(&semaphore->waiters), struct thread, elem));
+        thread_unblock(list_entry(list_pop_front(&semaphore->waiters), 
+                       struct thread, elem));
     }
     semaphore->value++;
     thread_preemption();

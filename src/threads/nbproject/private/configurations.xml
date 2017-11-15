@@ -20,6 +20,8 @@
         </df>
       </df>
       <in>barrier.h</in>
+      <in>brian-change.h</in>
+      <in>code.c</in>
       <in>condvar.c</in>
       <in>condvar.h</in>
       <in>flags.h</in>
